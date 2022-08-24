@@ -1,0 +1,131 @@
+#define _GLIBCXX_DEBUG
+
+//#pragma GCC optimize("Ofast")
+//#pragma GCC optimize("unroll-loops")
+//#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+//randoms
+//chrono::steady_clock::now().time_since_epoch().count()
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+
+#define ll long long
+#define trace(x) cout << #x << " = " << (x) << endl;
+#define all(x) begin(x), end(x)
+#define rall(x) rbegin(x), rend(x)
+#define uniq(x) x.resize(unique(all(x)) -  begin(x))
+#define ld long double
+#define sz(s) (int) size(s)
+#define pii pair<int, int>
+#define mp(x, y) make_pair(x, y)
+#define mt make_tuple
+#define int128 __int128
+
+template<typename T>
+void ckmn(T &x, T y) { if (x > y) { x = y; }}
+
+template<typename T>
+void ckmx(T &x, T y) { if (x < y) { x = y; }}
+
+
+int rand(int l, int r) { return (int) ((ll) rnd() % (r - l + 1)) + l; }
+
+const ll infL = 1e18;
+const int infI = 1e9 + 7;
+const int N = (1 << 20);
+const ll mod = 998244353;
+const ld eps = 1e-9;
+
+const int A = 26;
+
+
+struct node {
+    int nxt[A];
+    int suf, prev;
+    ll cnt = 0;
+
+    node() {
+        memset(nxt, -1, sizeof(nxt));
+        suf = prev = -1;
+        cnt = 0;
+    }
+};
+
+vector<node> t;
+
+int add(int a, char x) {
+    int b = size(t);
+    t.emplace_back();
+    t[b].prev = a, t[b].suf = 0;
+    int AA = a;
+    for (; a != -1; a = t[a].suf) {
+        if (t[a].nxt[x] == -1) {
+            t[a].nxt[x] = b;
+            t[b].cnt += t[a].cnt;
+            continue;
+        }
+        int c = t[a].nxt[x];
+        if (t[c].prev == a) {
+            t[b].suf = c;
+        } else {
+            int d = size(t);
+            t.emplace_back();
+            t[d].suf = t[c].suf;
+            t[c].suf = d;
+            t[b].suf = d;
+            t[d].prev = a;
+            memcpy(t[d].nxt, t[c].nxt, sizeof(t[c].nxt));
+            for (; a != -1 && t[a].nxt[x] == c; a = t[a].suf) {
+                t[d].cnt += t[a].cnt;
+                t[a].nxt[x] = d;
+            }
+            t[c].cnt -= t[d].cnt;
+        }
+        break;
+    }
+    return t[AA].nxt[x];
+}
+
+string tot(string s) {
+    for (int i = 0; i < sz(s); ++i) {
+        if (!islower(s[i])) {
+            s[i] = char('a' + (s[i] - 'A'));
+        }
+    }
+    return s;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    t = {{}};
+    string SS;
+    int VV = 0;
+    t[VV].cnt = 1;
+    while (cin >> SS) {
+        if (SS[0] == 'A') {
+            string s;
+            cin >> s;
+            int v = VV;
+            s = tot(s);
+            for (char c : s)
+                v = add(v, c - 'a');
+            VV = v;
+        } else {
+            string s;
+            cin >> s;
+            s = tot(s);
+            int v = 0;
+            for (char c : s) {
+                if (v != -1) {
+                    v = t[v].nxt[c - 'a'];
+                }
+            }
+            cout << (v != -1 && t[v].cnt ? "YES\n" : "NO\n");
+        }
+    }
+    return 0;
+}

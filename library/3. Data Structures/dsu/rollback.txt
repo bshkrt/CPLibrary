@@ -1,0 +1,55 @@
+struct dsu {
+    vector<int> p, sz;
+    vector<pair<int, int>> stk;
+    int n;
+
+    dsu() = default;
+
+    dsu(int n) : n(n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        sz.assign(n, 1);
+        stk.clear();
+    }
+
+    int get(int a) {
+        return (p[a] == a ? a : get(p[a]));
+    }
+
+    bool mrg(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) {
+            return false;
+        }
+        if (sz[a] < sz[b]) {
+            swap(a, b);
+        }
+        sz[a] += sz[b];
+        p[b] = a;
+        stk.emplace_back(a, b);
+        return true;
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    int comp() {
+        return n - int(size(stk));
+    }
+
+    void undo() {
+        assert(!stk.empty());
+        auto [a, b] = stk.back();
+        stk.pop_back();
+        p[b] = b;
+        sz[a] -= sz[b];
+    }
+
+    void rollback_until(int siz) {
+        while (stk.size() > siz) {
+            undo();
+        }
+    }
+
+};

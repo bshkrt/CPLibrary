@@ -1,0 +1,168 @@
+struct Info {
+    int sz;
+    Info() = default;
+    Info(int x) {
+        sz = x;
+    }
+};
+
+Info operator+(Info a, Info b) {
+    return {a.sz + b.sz};
+}
+
+struct node {
+    node *ch[2] = {nullptr, nullptr}, *p = nullptr;
+    int key{}, tag{};
+    bool rev = false;
+    Info val, info;
+    node(int x = 0, Info g = Info()) {
+        key = x;
+        val = info = g;
+    }
+};
+
+void apply(Info &v, int tag) {
+
+}
+
+void apply(int &tag, int v) {
+
+}
+
+void apply(node *v, int k) {
+    if (v) {
+        apply(v->tag, k);
+        apply(v->info, k);
+    }
+}
+
+void push(node *v) {
+    if (v) {
+        if (v->rev) {
+            v->rev = false;
+            if (v->ch[0]) {
+                v->ch[0]->rev ^= 1;
+            }
+            if (v->ch[1]) {
+                v->ch[1]->rev ^= 1;
+            }
+            swap(v->ch[0], v->ch[1]);
+        }
+        apply(v->ch[0], v->tag), apply(v->ch[1], v->tag);
+    }
+}
+
+bool isRoot(node *v) {
+    return v && (!v->p || (v->p->ch[0] != v && v->p->ch[1] != v));
+}
+
+int chnum(node *v) {
+    return v->p->ch[1] == v;
+}
+
+Info getInfo(node *v) {
+    return v ? v->info : Info();
+}
+
+void pull(node *v) {
+    if (v) {
+        v->info = v->val + getInfo(v->ch[0]) + getInfo(v->ch[1]);
+    }
+}
+
+void attach(node *p, node *v, int i) {
+    if (p) p->ch[i] = v;
+    if (v) v->p = p;
+    pull(p);
+}
+
+void rotate(node *v) {
+    node *p = v->p;
+    node *pp = p->p;
+    int i = chnum(v);
+    v->p = pp;
+    if (!isRoot(p)) {
+        pp->ch[chnum(p)] = v;
+        pull(pp);
+    }
+    attach(p, v->ch[i ^ 1], i);
+    attach(v, p, i ^ 1);
+}
+
+void splay(node *v) {
+    node *vv = v;
+    vector<node *> stk;
+    while (!isRoot(vv)) {
+        stk.push_back(vv);
+        vv = vv->p;
+    }
+    stk.push_back(vv);
+    while (!stk.empty()) {
+        push(stk.back());
+        stk.pop_back();
+    }
+    while (!isRoot(v)) {
+        if (!isRoot(v->p)) {
+            if (chnum(v) == chnum(v->p))
+                rotate(v->p);
+            else
+                rotate(v);
+        }
+        rotate(v);
+    }
+}
+
+void expose(node *v) {
+    splay(v);
+    v->ch[1] = nullptr;
+    pull(v);
+    while (v->p) {
+        splay(v->p);
+        attach(v->p, v, 1);
+        splay(v);
+    }
+}
+
+void makeRoot(node *v) {
+    expose(v);
+    v->rev ^= 1;
+}
+
+bool connected(node *a, node *b) {
+    makeRoot(b);
+    makeRoot(a);
+    if (isRoot(b) && a != b) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool strictly_connected(node *a, node *b) {
+    makeRoot(b);
+    makeRoot(a);
+    return !isRoot(b) && b->p == a;
+}
+
+void link(node *a, node *b) {
+    makeRoot(b);
+    makeRoot(a);
+    b->p = a;
+}
+
+void cut(node *a, node *b) {
+    makeRoot(b);
+    makeRoot(a);
+    push(a);
+    a->ch[chnum(b)] = nullptr;
+    b->p = nullptr;
+    pull(a);
+}
+
+node *lca(node *a, node *b, node *root) {
+    makeRoot(root);
+    expose(a);
+    expose(b);
+    splay(a);
+    return a->p ? a->p : a;
+}

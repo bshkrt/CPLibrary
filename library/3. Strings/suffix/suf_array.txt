@@ -1,0 +1,54 @@
+void suf_array(string s, vector<int>& a, vector<int>& lcp) {
+    if (s.empty()) return;
+    if (s.back() != char(0)) s += char(0);
+    int n = sz(s);
+    a.resize(n), lcp.resize(n);
+    vector<int> head(n), c(n), a1(n), c1(n), ar(n);
+    for (int i = 0; i < n; ++i)
+        a[i] = i;
+    sort(all(a), [&](int i, int j) {
+        return s[i] < s[j];
+    });
+    int color = 0;
+    for (int i = 1; i < n; ++i) {
+        if (s[a[i]] != s[a[i - 1]]) {
+            ++color;
+            head[color] = i;
+        }
+        c[a[i]] = color;
+    }
+
+    for (int len = 1; color + 1 < n && len < n; len <<= 1) {
+        for (int i = 0; i < n; ++i) {
+            int j = (a[i] - len);
+            if (j < 0) j += n;
+            a1[head[c[j]]++] = j;
+        }
+        head[0] = color = c1[a1[0]] = 0;
+        pair<int, int> prev = {c[a1[0]], c[(a1[0] + len) % n]};
+        for (int i = 1; i < n; ++i) {
+            pair<int, int> now = {c[a1[i]], c[(a1[i] + len) % n]};
+            if (now != prev) {
+                ++color;
+                head[color] = i;
+            }
+            c1[a1[i]] = color;
+            swap(prev, now);
+        }
+        swap(a, a1), swap(c, c1);
+    }
+    for (int i = 0; i < n; ++i)
+        ar[a[i]] = i;
+    int LastLcp = 0;
+    for (int i = 0; i < n; ++i) {
+        int j = ar[i];
+        if (j == n - 1) {
+            continue;
+        }
+        j = a[j + 1];
+        int k = max(0, LastLcp - 1);
+        while (s[i + k] == s[j + k])
+            ++k;
+        lcp[ar[i]] = LastLcp = k;
+    }
+}

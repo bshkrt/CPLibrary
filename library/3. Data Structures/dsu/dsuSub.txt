@@ -1,0 +1,38 @@
+struct dsuSub {
+    vector<int> p;
+    vector<vector<int>> sz;
+    explicit dsuSub(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        sz.resize(n);
+        for (int i = 0; i < n; ++i) {
+            sz[i] = {i};
+        }
+    }
+
+    dsuSub() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        if (sz[a].size() < sz[b].size()) swap(a, b);
+        p[b] = a;
+        for (int x : sz[b]) {
+            sz[a].push_back(x);
+        }
+        sz[b].clear();
+        return true;
+    }
+
+    int size(int a) {
+        return int(sz[get(a)].size());
+    }
+};

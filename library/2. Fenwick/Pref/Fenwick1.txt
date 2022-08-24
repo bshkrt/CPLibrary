@@ -1,0 +1,50 @@
+template<typename T>
+struct Fenwick {
+    vector<T> t;
+    int n;
+    Fenwick(int x) {
+        n = x;
+        t.assign(x + 1, 0);
+    }
+
+    Fenwick() = default;
+
+    T get(int i) {
+        T ans = 0;
+        for (; i > 0; i -= i & -i)
+            ans += t[i];
+        return ans;
+    }
+
+    //[l, r)
+    T get(int l, int r) {
+        return get(r - 1) - get(l - 1);
+    }
+
+    void modify(int i, T v) {
+        assert(i > 0);
+        for (; i <= n; i += i & -i)
+            t[i] += v;
+    }
+    //[l, r)
+    void modify(int l, int r, T v) {
+        modify(l, v);
+        modify(r, -v);
+    }
+
+    const int logn = 20;
+
+    int lower_bound(T x) {
+        int k = 0;
+        for (int l = logn; l >= 0; --l) {
+            if (k + (1 << l) <= n && t[k + (1 << l)] < x) {
+                k += (1 << l);
+                x -= t[k];
+            }
+        }
+        return k;
+    }
+
+};
+
+//CHECK logn!!!

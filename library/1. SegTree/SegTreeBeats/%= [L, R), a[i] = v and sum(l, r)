@@ -1,0 +1,73 @@
+struct SegTreeModEq {
+    int sz = 1;
+
+    struct node {
+        int mx;
+        ll sum;
+
+        node() = default;
+
+        node(int x) {
+            sum = mx = x;
+        }
+    };
+
+    vector<node> t;
+
+    node mrg(node a, node b) {
+        node ans{};
+        ans.sum = a.sum + b.sum;
+        ans.mx = max(a.mx, b.mx);
+        return ans;
+    }
+
+    SegTreeModEq() = default;
+
+    SegTreeModEq(int n, vector<int> a) {
+        while (sz < n) sz <<= 1;
+        t.resize(sz << 1);
+        for (int i = 0; i < n; ++i) {
+            t[i + sz] = node(a[i]);
+        }
+        for (int i = sz - 1; i > 0; --i) {
+            t[i] = mrg(t[i << 1], t[i << 1 | 1]);
+        }
+    }
+
+    void modeq(int l, int r, int v, int x, int lx, int rx) {
+        if (l >= rx || lx >= r || t[x].mx < v) return;
+        if (lx + 1 == rx) {
+            t[x].mx %= v;
+            t[x].sum = t[x].mx;
+            return;
+        }
+        int m = (lx + rx) >> 1;
+        modeq(l, r, v, x << 1, lx, m), modeq(l, r, v, x << 1 | 1, m, rx);
+        t[x] = mrg(t[x << 1], t[x << 1 | 1]);
+    }
+
+    void modeq(int l, int r, int v) {
+        modeq(l, r, v, 1, 0, sz);
+    }
+
+    void st(int i, int v) {
+        int x = i + sz;
+        t[x].sum = t[x].mx = v;
+        x >>= 1;
+        while (x) {
+            t[x] = mrg(t[x << 1], t[x << 1 | 1]);
+            x >>= 1;
+        }
+    }
+
+    node get(int l, int r, int x, int lx, int rx) {
+        if (l >= rx || lx >= r) return node();
+        if (l <= lx && rx <= r) return t[x];
+        int m = (lx + rx) >> 1;
+        return mrg(get(l, r, x << 1, lx, m), get(l, r, x << 1 | 1, m, rx));
+    }
+
+    node get(int l, int r) {
+        return get(l, r, 1, 0, sz);
+    }
+};

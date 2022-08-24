@@ -1,0 +1,185 @@
+template<typename T>
+struct dsuMin {
+    vector<int> p;
+    vector<T> mn;
+
+    dsuMin() = default;
+
+    dsuMin(int n, T x = {}) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        mn.assign(n, x);
+    }
+
+    void modify(int i, T x) {
+        mn[i] = x;
+    }
+
+    int get(int a) {
+        if (p[a] == a) {
+            return a;
+        } else {
+            int pr = get(p[a]);
+            mn[a] = min(mn[a], mn[p[a]]);
+            return p[a] = pr;
+        }
+    }
+
+    T get_min(int a) {
+        get(a);
+        return mn[a];
+    }
+
+    bool unite(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) {
+            return false;
+        }
+        p[b] = a;
+        return true;
+    }
+
+};
+
+namespace DominatorTree {
+
+    constexpr int N = 200000, inf = 228228228;
+
+    int dom[N], sdom[N], tin[N], T, n, m, s;
+
+    bool used[N], can_visit[N];
+
+    vector<int> g[N], rev[N], ord, adj[N];
+    vector<pair<int, int>> e;
+
+    void dfs_init(int v) {
+        tin[v] = T++;
+        ord.push_back(v);
+        used[v] = true;
+        for (int to: g[v]) {
+            if (!used[to]) {
+                dfs_init(to);
+            }
+        }
+    }
+
+    void renum() {
+        for (int i = 0; i < n; ++i) {
+            g[i].clear();
+        }
+        for (auto &[x, y]: e) {
+            x = tin[x], y = tin[y];
+        }
+    }
+
+    void calc_sdom() {
+        dsuMin<int> d(n, inf);
+        for (int i = n - 1; i > -1; --i) {
+            sdom[i] = inf;
+            if (can_visit[i]) {
+                sdom[i] = i;
+                for (int p: rev[i]) {
+                    sdom[i] = min(sdom[i], p);
+                    if (p > i) {
+                        sdom[i] = min(sdom[i], d.get_min(p));
+                    }
+                }
+                d.modify(i, sdom[i]);
+                for (int to: adj[i]) {
+                    d.unite(i, to);
+                }
+            }
+        }
+    }
+
+    void calc_dom() {
+        dsuMin<pair<int, int>> d(n, {inf, -1});
+        vector<vector<int>> qu(n);
+        for (int i = 0; i < n; ++i) {
+            dom[i] = inf;
+            if (can_visit[i] && sdom[i] < n) {
+                qu[sdom[i]].push_back(i);
+            }
+        }
+        vector<pair<int, int>> val(n, {inf, -1});
+        function<void(int)> dfs = [&](int v) {
+            for (int to: adj[v]) {
+                dfs(to);
+            }
+            for (int i: qu[v]) {
+                val[i] = d.get_min(i);
+            }
+            d.modify(v, {sdom[v], v});
+            for (int to: adj[v]) {
+                d.unite(v, to);
+            }
+        };
+        dfs(0);
+        for (int i = 0; i < n; ++i) {
+            if (val[i].first >= sdom[i]) {
+                dom[i] = sdom[i];
+            } else {
+                dom[i] = dom[val[i].second];
+            }
+        }
+    }
+
+    void solve() {
+        for (int i = 0; i < n; ++i) {
+            g[i].clear(), rev[i].clear(), adj[i].clear();
+            used[i] = can_visit[i] = false;
+        }
+        for (auto [x, y]: e) {
+            g[x].push_back(y);
+            rev[y].push_back(x);
+        }
+        function<void(int)> gfs = [&](int v) {
+            can_visit[v] = true;
+            for (int to: g[v]) {
+                if (!can_visit[to]) {
+                    adj[v].push_back(to);
+                    gfs(to);
+                }
+            }
+        };
+        gfs(0);
+        calc_sdom();
+        calc_dom();
+    }
+
+    vector<int> dominators(int _n, vector<pair<int, int>> _e, int _s = 0) {
+        n = _n, m = (int)_e.size(), s = _s;
+        swap(e, _e);
+        for (int i = 0; i < n; ++i) {
+            g[i].clear(), rev[i].clear(), adj[i].clear();
+        }
+        ord.clear();
+        memset(used, 0, sizeof(used[0]) * n), memset(tin, 0, sizeof(tin[0]) * n);
+        T = 0;
+
+        for (auto [x, y]: e) {
+            g[x].push_back(y);
+        }
+
+        dfs_init(s);
+
+        for (int i = 0; i < n; ++i)
+            if (!used[i])
+                dfs_init(i);
+        renum();
+        solve();
+
+        vector<int> ans(n);
+        dom[s] = s;
+        for (int i = 0; i < n; ++i) {
+            if (!can_visit[i]) {
+                ans[ord[i]] = -1;
+                continue;
+            }
+            ans[ord[i]] = ord[dom[i]];
+        }
+
+        return ans;
+    }
+
+}

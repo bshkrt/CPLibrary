@@ -1,0 +1,48 @@
+template<typename T, class F = function<T(const T&, const T&)>>
+class SegTree {
+public:
+    T neutral = 0;
+    vector <T> t;
+    int sz;
+    F func;
+
+    SegTree() = default;
+    SegTree(int n, const F& f, T x = 0): func(f) {
+        init(n, x);
+    }
+
+    void init(int n, T x = 0) {
+        sz = n;
+        neutral = x;
+        t.assign(sz << 1, x);
+    }
+
+    void modify(int i, T v) {
+        int x = i + sz;
+        t[x] = v;
+        x >>= 1;
+        while (x) {
+            t[x] = func(t[x << 1], t[x << 1 | 1]);
+            x >>= 1;
+        }
+    }
+
+    T get(int l, int r) {
+        l += sz;
+        r += sz;
+        T ans = neutral;
+        while (l < r) {
+            if (l & 1) {
+                ans = func(ans, t[l++]);
+            }
+            if (r & 1) {
+                ans = func(ans, t[--r]);
+            }
+            l >>= 1;
+            r >>= 1;
+        }
+        return ans;
+    }
+
+};
+

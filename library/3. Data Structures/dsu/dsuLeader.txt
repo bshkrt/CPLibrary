@@ -1,0 +1,38 @@
+struct dsuLeader {
+    vector<int> p, sz, leader;
+
+    explicit dsuLeader(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        leader = p;
+        sz.assign(n, 1);
+    }
+
+    dsuLeader() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b, int x = -1) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        if (sz[a] < sz[b]) swap(a, b);
+        p[b] = a;
+        sz[a] += sz[b];
+        if (x != -1) leader[a] = x;
+        return true;
+    }
+
+    int lead(int x) {
+        return leader[get(x)];
+    }
+
+    int size(int a) {
+        return sz[get(a)];
+    }
+};

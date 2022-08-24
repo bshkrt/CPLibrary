@@ -1,0 +1,78 @@
+struct node {
+    int l, len, suf, par;
+    map<int, int> go;
+
+    node(int _par = 0, int _l = 0, int _len = 0, int _suf = 0) {
+        suf = _suf, par = _par, l = _l, len = _len;
+    }
+};
+
+vector<node> t = {{}};
+
+vector<int> s;
+
+int vert = 0, pos = 0;
+
+int create_node(int par = 0, int l = 0, int len = 0) {
+    int sz = (int) t.size();
+    t.emplace_back(par, l, len);
+    return sz;
+}
+
+int cut_edge(int v, int c, int new_len) {
+    int to = t[v].go[c];
+    int prev_len = t[to].len, prev_l = t[to].l;
+    int new_v = create_node(v, prev_l, new_len);
+    t[v].go[c] = new_v;
+    t[new_v].go[s[prev_l + new_len]] = to;
+    t[to].len = prev_len - new_len, t[to].l = prev_l + new_len, t[to].par = new_v;
+    return new_v;
+}
+
+void normalize() {
+    assert(pos);
+    int nxt = s.end()[-pos];
+    while (t[vert].go.count(nxt) && t[t[vert].go[nxt]].len < pos) {
+        pos -= t[t[vert].go[nxt]].len;
+        vert = t[vert].go[nxt];
+        nxt = s.end()[-pos];
+    }
+}
+
+void add_char(int C) {
+    s.push_back(C);
+    ++pos;
+    int last = -1;
+    while (pos > 0) {
+        normalize();
+        int curc = s.end()[-pos];
+        if (!t[vert].go.count(curc)) {
+            int to = create_node(vert, (int) s.size() - pos, inf);
+            if (last != -1) {
+                t[last].suf = vert;
+            }
+            last = -1;
+            t[vert].go[curc] = to;
+        } else {
+            int newc = s[t[t[vert].go[curc]].l + pos - 1];
+            if (newc == C) {
+                if (last != -1) {
+                    t[last].suf = vert;
+                }
+                break;
+            } else {
+                int mid = cut_edge(vert, curc, pos - 1);
+                t[mid].go[C] = create_node(mid, (int) s.size() - 1, inf);
+                if (last != -1) {
+                    t[last].suf = mid;
+                }
+                last = mid;
+            }
+        }
+        if (vert == 0) {
+            --pos;
+        } else {
+            vert = t[vert].suf;
+        }
+    }
+}

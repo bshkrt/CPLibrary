@@ -1,0 +1,31 @@
+struct dsu {
+    vector<int> p, sz;
+    explicit dsu(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    dsu() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        if (sz[a] < sz[b]) swap(a, b);
+        p[b] = a;
+        sz[a] += sz[b];
+        return true;
+    }
+
+    int size(int a) {
+        return sz[get(a)];
+    }
+};

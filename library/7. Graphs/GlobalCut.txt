@@ -1,0 +1,59 @@
+using ll = long long;
+
+ll GlobalCut(int n, vector<vector<pair<int, int>>> g) {
+    auto contract = [&](int a, int b) {
+        for (int i = 0; i < n; ++i) {
+            for (auto &[to, w]: g[i]) {
+                if (to == b) {
+                    to = a;
+                }
+            }
+        }
+        g[a].insert(g[a].end(), g[b].begin(), g[b].end());
+        g[b].clear();
+    };
+
+    ll ans = LONG_LONG_MAX;
+
+    int done = 0;
+    vector<bool> killed(n);
+
+    while (done + 2 <= n) {
+        vector<ll> dist(n, 0);
+        vector<bool> used(n);
+        priority_queue<pair<ll, int>> pq;
+        pq.push({0, 0});
+        int cnt = 0;
+
+        int s = -228;
+        while (!pq.empty() && cnt + done < n - 1) {
+            auto [W, v] = pq.top();
+            pq.pop();
+            if (!used[v]) {
+                used[v] = true;
+                s = v;
+                ++cnt;
+                for (auto [to, w]: g[v]) {
+                    if (!used[to]) {
+                        pq.push({dist[to] += w, to});
+                    }
+                }
+            }
+        }
+
+        int t = -1;
+        for (int i = 0; i < n; ++i) {
+            if (!used[i] && !killed[i]) {
+                if (t != -1) {
+                    return 0;
+                }
+                t = i;
+            }
+        }
+        killed[t] = true;
+        ans = min(ans, dist[t]);
+        contract(s, t);
+        ++done;
+    }
+    return ans;
+}

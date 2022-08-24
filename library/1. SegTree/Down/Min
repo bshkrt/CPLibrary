@@ -1,0 +1,54 @@
+template<typename T>
+struct SegTreeMin {
+    T neutral = numeric_limits<T>::max() / 2;
+    vector <T> t;
+    int sz;
+
+    SegTreeMin() = default;
+    SegTreeMin(int n, T x) {
+        sz = n;
+        neutral = x;
+        t.assign(sz << 1, x);
+    }
+
+    SegTreeMin(const vector<T>& a, T x) {
+        sz = (int)a.size();
+        neutral = x;
+        t.assign(sz << 1, x);
+        for (int i = 0; i < sz; ++i) {
+            t[i + sz] = a[i];
+        }
+        for (int i = sz - 1; i > 0; --i) {
+            t[i] = min(t[i << 1], t[i << 1 | 1]);
+        }
+    }
+
+
+    void modify(int i, T v) {
+        int x = i + sz;
+        t[x] = v;
+        x >>= 1;
+        while (x) {
+            t[x] = min(t[x << 1], t[x << 1 | 1]);
+            x >>= 1;
+        }
+    }
+
+    T get(int l, int r) {
+        l += sz;
+        r += sz;
+        T ans = neutral;
+        while (l < r) {
+            if (l & 1) {
+                ans = min(ans, t[l++]);
+            }
+            if (r & 1) {
+                ans = min(ans, t[--r]);
+            }
+            l >>= 1;
+            r >>= 1;
+        }
+        return ans;
+    }
+
+};

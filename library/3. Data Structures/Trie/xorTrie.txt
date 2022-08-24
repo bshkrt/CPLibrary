@@ -1,0 +1,37 @@
+struct trie {
+    struct node {
+        int go[2] = {-1, -1};
+        int mx = -inf;
+    };
+
+    vector<node> t = {{}};
+
+    void add(int x, int key) {
+        int v = 0;
+        for (int i = A - 1; i > -1; --i) {
+            t[v].mx = max(t[v].mx, key);
+            int b = x >> i & 1;
+            if (t[v].go[b] == -1) {
+                t[v].go[b] = (int) t.size();
+                t.emplace_back();
+            }
+            v = t[v].go[b];
+        }
+        t[v].mx = max(t[v].mx, key);
+    }
+
+    int query(int x, int need) {
+        int ans = -inf, v = 0;
+        if (t.empty()) return ans;
+        for (int i = A - 1; i > -1 && v != -1; --i) {
+            int b = (need >> i & 1);
+            if (b == 0) {
+                int c = t[v].go[(x >> i & 1) ^ 1];
+                if (c != -1)
+                    ans = max(ans, t[c].mx);
+            }
+            v = t[v].go[(x >> i & 1) ^ b];
+        }
+        return ans;
+    }
+};

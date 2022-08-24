@@ -1,0 +1,51 @@
+struct cht_min {
+
+    struct line {
+        ll k, b;
+        int id;
+        double f;
+
+        line() = default;
+
+        line(ll a, ll B, int gg) {
+            k = a, b = B, id = gg;
+        }
+
+        double intersect(line now) const {
+            return (ld) (b - now.b) / (now.k - k);
+        }
+
+        ll get(ll x) const {
+            return k * x + b;
+        }
+    };
+
+
+    vector<line> d;
+    int idx = 0;
+
+    void add(line now) {
+        while (d.size() > 1) {
+            if (d.back().k == now.k) {
+                if (d.back().b < now.b) {
+                    return;
+                }
+            }
+            if (now.intersect(d.back()) > d.back().f) break;
+            d.pop_back();
+        }
+        if (!d.empty())
+            now.f = now.intersect(d.back());
+        else
+            now.f = -infL;
+        d.push_back(now);
+    }
+
+    pair<ll, int> get(ll x) {
+        if (d.empty()) return {infL, -1};
+        idx = min(idx, (int) d.size() - 1);
+        while (idx < (int) d.size() - 1 && d[idx].get(x) > d[idx + 1].get(x))
+            ++idx;
+        return {d[idx].get(x), d[idx].id};
+    }
+};

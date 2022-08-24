@@ -1,0 +1,293 @@
+struct Info {
+    int mn = 1228228228;
+
+    Info(int x = 1228228228) {
+        mn = x;
+    }
+};
+
+Info operator+(Info a, Info b) {
+    return Info{min(a.mn, b.mn)};
+}
+
+void apply(int &a, int b) {
+    a ^= b;
+}
+
+struct node {
+    node *ch[2] = {nullptr, nullptr}, *p = {nullptr};
+    int key, sz, tag = 0;
+    Info info{};
+
+    node() {
+        info = Info(0);
+        key = 0;
+        sz = 0;
+        tag = 0;
+    }
+
+    node(int x) {
+        info = Info(x);
+        key = x;
+        sz = 1;
+        tag = 0;
+    }
+};
+
+bool isRoot(node *v) {
+    return v && !v->p;
+}
+
+int chnum(node *v) {
+    return v->p ? v->p->ch[1] == v : -1;
+}
+
+void pull(node *v) {
+    if (!v) return;
+    v->info = (v->ch[0] ? v->ch[0]->info : Info()) + (v->ch[1] ? v->ch[1]->info : Info());
+    v->info.mn = min(v->info.mn, v->key);
+    v->sz = 1 + (v->ch[0] ? v->ch[0]->sz : 0) + (v->ch[1] ? v->ch[1]->sz : 0);
+}
+
+void attach(node *p, node *v, int i) {
+    if (p) p->ch[i] = v;
+    if (v) v->p = p;
+    pull(p);
+    pull(v);
+}
+
+void apply(node *v, int x) {
+    if (v) {
+        v->tag ^= x;
+    }
+}
+
+
+void push(node *v) {
+    if (v && v->tag) {
+        swap(v->ch[0], v->ch[1]);
+        apply(v->ch[0], 1), apply(v->ch[1], 1);
+        v->tag = 0;
+    }
+}
+
+void kill_parent(node *v) {
+    if (v) v->p = nullptr;
+}
+
+void kill_child(node *v, int i) {
+    if (v->ch[i]) {
+        v->ch[i]->p = nullptr;
+        v->ch[i] = nullptr;
+    }
+}
+
+void rotate(node *v) {
+    node *p = v->p;
+    if (!p) return;
+    node *g = p->p;
+    int i = chnum(v), j = chnum(p);
+    attach(p, v->ch[i ^ 1], i);
+    attach(v, p, i ^ 1);
+    attach(g, v, j);
+}
+
+struct Splay {
+    node *root;
+
+    void splay(node *v) {
+        if (!v) return;
+        node *x = v;
+        vector<node *> stk;
+        while (x) {
+            stk.push_back(x);
+            x = x->p;
+        }
+        reverse(stk.begin(), stk.end());
+        for (auto y: stk) push(y);
+        while (!isRoot(v)) {
+            if (!isRoot(v->p)) {
+                if (chnum(v) == chnum(v->p)) {
+                    rotate(v->p);
+                } else {
+                    rotate(v);
+                }
+            }
+            rotate(v);
+        }
+        root = v;
+    }
+
+    pair<node *, node *> split(node *v) {
+        if (!v) return {nullptr, nullptr};
+        splay(v);
+        node *R = v->ch[1];
+        v->ch[1] = nullptr;
+        if (R) R->p = nullptr;
+        pull(v);
+        pull(R);
+        return {v, R};
+    }
+
+    pair<node *, node *> split_key(int x) {
+        if (!root) return {nullptr, nullptr};
+        node *L = prv(x);
+        if (L) {
+            return split(L);
+        } else {
+            return {nullptr, root};
+        }
+    }
+
+    pair<node *, node *> split_sz(int k) {
+        if (!root) return {nullptr, nullptr};
+        if (root->sz <= k) return {root, nullptr};
+        if (k == 0) return {nullptr, root};
+        node *v = root;
+        while (true) {
+            push(v);
+            int szL = v->ch[0] ? v->ch[0]->sz : 0;
+            if (szL + 1 < k) {
+                v = v->ch[1];
+                k -= 1 + szL;
+            } else {
+                if (szL + 1 == k) {
+                    splay(v);
+                    auto R = v->ch[1];
+                    kill_child(v, 1);
+                    pull(v);
+                    return {v, R};
+                } else {
+                    v = v->ch[0];
+                }
+            }
+        }
+    }
+
+    node *nxt(int x) {
+        if (!root) return root;
+        node *v = root;
+        node *ans = nullptr;
+        while (true) {
+            if (v->key <= x) {
+                if (!v->ch[1]) {
+                    splay(v);
+                    return ans;
+                }
+                v = v->ch[1];
+            } else {
+                ans = v;
+                if (!v->ch[0]) {
+                    splay(v);
+                    return ans;
+                }
+                v = v->ch[0];
+            }
+        }
+    }
+
+    node *prv(int x) {
+        if (!root) return root;
+        node *v = root;
+        node *ans = nullptr;
+        while (true) {
+            push(v);
+            if (v->key >= x) {
+                if (!v->ch[0]) {
+                    splay(v);
+                    return ans;
+                }
+                v = v->ch[0];
+            } else {
+                ans = v;
+                if (!v->ch[1]) {
+                    splay(v);
+                    return ans;
+                }
+                v = v->ch[1];
+            }
+        }
+    }
+
+    node *find(int x) {
+        node *v = prv(x + 1);
+        splay(v);
+        return v && v->key == x ? v : nullptr;
+    }
+
+    node *leftest() {
+        if (!root) return nullptr;
+        node *v = root;
+        push(v);
+        while (v->ch[0]) {
+            v = v->ch[0];
+            push(v);
+        }
+        splay(v);
+        return v;
+    }
+
+    node *rightest() {
+        if (!root) return nullptr;
+        node *v = root;
+        push(v);
+        while (v->ch[1]) {
+            v = v->ch[1];
+            push(v);
+        }
+        splay(v);
+        return v;
+    }
+
+    void deleteR() {
+        if (!root) return;
+        rightest();
+        root = root->ch[0];
+        if (root) root->p = nullptr;
+    }
+
+    void deleteL() {
+        if (!root) return;
+        leftest();
+        root = root->ch[1];
+        if (root) root->p = nullptr;
+    }
+};
+
+Splay *toSplay(node *a) {
+    return new Splay({a});
+}
+
+node *toNode(Splay *a) {
+    if (!a) return nullptr;
+    return a->root;
+}
+
+Splay *merge(Splay *a, Splay *b) {
+    if (!a || !a->root) return b;
+    if (!b || !b->root) return a;
+    a->rightest();
+    attach(a->root, b->root, 1);
+    return a;
+}
+
+
+Splay *merge(Splay *a, node *b) {
+    return merge(a, toSplay(b));
+}
+
+Splay *merge(node *a, Splay *b) {
+    return merge(toSplay(a), b);
+}
+
+Splay *merge(node *a, node *b) {
+    return merge(toSplay(a), toSplay(b));
+}
+
+pair<node *, node *> split_sz(node *v, int k) {
+    return toSplay(v)->split_sz(k);
+}
+
+pair<node *, node *> split_key(node *v, int k) {
+    return toSplay(v)->split_key(k);
+}

@@ -1,0 +1,54 @@
+template<typename T>
+struct SegTreeMax {
+    T neutral = 0;
+    vector <T> t;
+    int sz;
+
+    SegTreeMax() = default;
+    SegTreeMax(int n, T x = 0) {
+        sz = n;
+        neutral = x;
+        t.assign(sz << 1, x);
+    }
+
+    SegTreeMax(const vector<T>& a, T x = 0) {
+        sz = (int)a.size();
+        neutral = x;
+        t.assign(sz << 1, x);
+        for (int i = 0; i < sz; ++i) {
+            t[i + sz] = a[i];
+        }
+        for (int i = sz - 1; i > 0; --i) {
+            t[i] = max(t[i << 1], t[i << 1 | 1]);
+        }
+    }
+
+
+    void modify(int i, T v) {
+        int x = i + sz;
+        t[x] = v;
+        x >>= 1;
+        while (x) {
+            t[x] = max(t[x << 1], t[x << 1 | 1]);
+            x >>= 1;
+        }
+    }
+
+    T get(int l, int r) {
+        l += sz;
+        r += sz;
+        T ans = neutral;
+        while (l < r) {
+            if (l & 1) {
+                ans = max(ans, t[l++]);
+            }
+            if (r & 1) {
+                ans = max(ans, t[--r]);
+            }
+            l >>= 1;
+            r >>= 1;
+        }
+        return ans;
+    }
+
+};

@@ -1,0 +1,36 @@
+template<typename T>
+struct Fenwick {
+    vector<T> t;
+    int n;
+    Fenwick(int x) {
+        n = x;
+        t.assign(x + 1, 0);
+    }
+
+    Fenwick() = default;
+
+    T get(int i) {
+        T ans = 0;
+        for (; i <= n; i += i & -i)
+            ans += t[i];
+        return ans;
+    }
+
+    //[l, r)
+    T get(int l, int r) {
+        return get(l) - get(r);
+    }
+
+    void modify(int i, T v) {
+        for (; i > 0; i -= i & -i)
+            t[i] += v;
+    }
+    //[l, r)
+    void modify(int l, int r, T v) {
+        modify(l - 1, -v);
+        modify(r - 1, v);
+    }
+
+};
+
+//SUFFIX

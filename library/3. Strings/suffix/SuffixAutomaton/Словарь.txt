@@ -1,0 +1,171 @@
+//#define _GLIBCXX_DEBUG
+
+//#pragma GCC optimize("Ofast")
+//#pragma GCC optimize("unroll-loops")
+//#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+//randoms
+//chrono::steady_clock::now().time_since_epoch().count()
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+
+#define ll long long
+#define trace(x) cout << #x << " = " << (x) << endl;
+#define all(x) begin(x), end(x)
+#define rall(x) rbegin(x), rend(x)
+#define uniq(x) x.resize(unique(all(x)) -  begin(x))
+#define ld long double
+#define sz(s) (int) size(s)
+#define pii pair<int, int>
+#define mp(x, y) make_pair(x, y)
+#define mt make_tuple
+#define int128 __int128
+
+template<typename T>
+void ckmn(T &x, T y) { if (x > y) { x = y; }}
+
+template<typename T>
+void ckmx(T &x, T y) { if (x < y) { x = y; }}
+
+
+int rand(int l, int r) { return (int) ((ll) rnd() % (r - l + 1)) + l; }
+
+const ll infL = 1e18;
+const int infI = 1e9 + 7;
+const int N = 10000010;
+const ll mod = 998244353;
+const ld eps = 1e-9;
+
+
+const int A = 3;
+
+
+struct node {
+    int nxt[A]{};
+    int suf, prev;
+
+    node() {
+        memset(nxt, -1, sizeof(nxt));
+        suf = prev = -1;
+    }
+};
+
+vector<node> t;
+int used[N], T = 1;
+bool ans[N];
+
+int add(int a, int x) {
+    int b = -1;
+    if (t[a].nxt[x] == -1) {
+        b = size(t);
+        t.emplace_back();
+        t[b].prev = a, t[b].suf = 0;
+    }
+    int AA = a;
+    for (; a != -1; a = t[a].suf) {
+        if (t[a].nxt[x] == -1) {
+            t[a].nxt[x] = b;
+            continue;
+        }
+        int c = t[a].nxt[x];
+        if (t[c].prev == a) {
+            if (b != -1)
+                t[b].suf = c;
+        } else {
+            int d = size(t);
+            t.emplace_back();
+            t[d].suf = t[c].suf;
+            t[c].suf = d;
+            if (b != -1)
+                t[b].suf = d;
+            t[d].prev = a;
+            memcpy(t[d].nxt, t[c].nxt, sizeof(t[c].nxt));
+            for (; a != -1 && t[a].nxt[x] == c; a = t[a].suf) {
+                t[a].nxt[x] = d;
+            }
+        }
+        break;
+    }
+    return t[AA].nxt[x];
+}
+
+ll dp[N];
+
+void dfs(int v) {
+    dp[v] = ans[v];
+    used[v] = T;
+    if (t[v].suf != -1) {
+        if (used[t[v].suf] != T)
+            dfs(t[v].suf);
+        dp[v] += dp[t[v].suf];
+    }
+}
+
+string sdvig(string s, int x) {
+    string b;
+    b.resize(sz(s));
+    for (int j = 0; j < sz(s); ++j) {
+        int v = (j + x);
+        if (v >= sz(s)) v -= sz(s);
+        b[j] = s[v];
+    }
+    return b;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int tt;
+    cin >> tt;
+    t = {{}};
+    int v = 0;
+    unordered_set<string> st;
+    ll gg = 0;
+    //
+    for (int i = 0; i < tt; ++i) {
+        string SS;
+        cin >> SS;
+        if (SS[0] == '+') {
+            string s;
+            cin >> s;
+            s = sdvig(s, gg % sz(s));
+            if (st.count(s)) continue;
+            st.insert(s);
+            v = 0;
+            for (char c : s)
+                v = add(v, c - 'a');
+            ans[v] = 1;
+        } else if (SS[0] == '-') {
+            string s;
+            cin >> s;
+            s = sdvig(s, gg % sz(s));
+            if (!st.count(s)) continue;
+            st.erase(s);
+            v = 0;
+            for (char c : s) {
+                v = t[v].nxt[c - 'a'];
+            }
+            ans[v] = 0;
+
+        } else {
+            string s;
+            cin >> s;
+            s = sdvig(s, gg % sz(s));
+            gg = 0;
+            v = 0;
+            for (char c : s) {
+                v = add(v, c - 'a');
+                if (used[v] != T)
+                    dfs(v);
+                gg += dp[v];
+            }
+            ++T;
+            cout << gg << '\n';
+        }
+    }
+
+    return 0;
+}

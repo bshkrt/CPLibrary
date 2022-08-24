@@ -1,0 +1,29 @@
+template<typename T>
+class Heap {
+private:
+    priority_queue<T> h, e;
+    void maintain() {
+        while (!e.empty() && h.top() == e.top()) {
+            h.pop();
+            e.pop();
+        }
+    }
+public:
+    void erase(const T &value) {
+        e.push(value);
+    }
+    void push(const T &value) {
+        h.push(value);
+    }
+    void pop() {
+        maintain();
+        h.pop();
+    }
+    const T &top() {
+        maintain();
+        return h.top();
+    }
+    bool empty() {
+        return h.size() == e.size();
+    }
+};

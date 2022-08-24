@@ -1,0 +1,163 @@
+//#define _GLIBCXX_DEBUG
+
+//#pragma GCC optimize("Ofast")
+//#pragma GCC optimize("unroll-loops")
+//#pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,tune=native")
+
+#include <bits/stdc++.h>
+
+using namespace std;
+
+//randoms
+//chrono::steady_clock::now().time_since_epoch().count()
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+
+#define ll long long
+#define trace(x) cout << #x << " = " << (x) << endl;
+#define all(x) begin(x), end(x)
+#define rall(x) rbegin(x), rend(x)
+#define uniq(x) x.resize(unique(all(x)) -  begin(x))
+#define ld long double
+#define sz(s) (int) size(s)
+#define pii pair<int, int>
+#define mp(x, y) make_pair(x, y)
+#define mt make_tuple
+#define int128 __int128
+
+template<typename T>
+void ckmn(T &x, T y) { if (x > y) { x = y; }}
+
+template<typename T>
+void ckmx(T &x, T y) { if (x < y) { x = y; }}
+
+
+int rand(int l, int r) { return (int) ((ll) rnd() % (r - l + 1)) + l; }
+
+const ll infL = 1e18;
+const int infI = 1e9 + 7;
+const int N = (1 << 22);
+const ll mod = 998244353;
+const ld eps = 1e-9;
+
+
+const int A = 10;
+
+
+struct node {
+    int nxt[A];
+    int suf, prev, depth, pc;
+    ll cnt = 0;
+
+    node() {
+        memset(nxt, -1, sizeof(nxt));
+        suf = prev = pc = -1;
+        cnt = 0;
+        depth = 0;
+    }
+};
+
+vector<node> t;
+bool used[N];
+
+int add(int a, int x) {
+    int b = size(t);
+    t.emplace_back();
+    t[b].prev = a, t[b].suf = 0;
+    t[b].pc = x;
+    int AA = a;
+    for (; a != -1; a = t[a].suf) {
+        if (t[a].nxt[x] == -1) {
+            t[a].nxt[x] = b;
+            continue;
+        }
+        int c = t[a].nxt[x];
+        if (t[c].prev == a) {
+            t[b].suf = c;
+        } else {
+            int d = size(t);
+            t.emplace_back();
+            t[d].suf = t[c].suf;
+            t[c].suf = d;
+            t[b].suf = d;
+            t[d].prev = a;
+            t[d].pc = x;
+            memcpy(t[d].nxt, t[c].nxt, sizeof(t[c].nxt));
+            for (; a != -1 && t[a].nxt[x] == c; a = t[a].suf) {
+                t[a].nxt[x] = d;
+            }
+        }
+        break;
+    }
+    return t[AA].nxt[x];
+}
+
+vector<int> tops;
+
+void dfs(int v) {
+    used[v] = true;
+    for (int to : t[v].nxt) {
+        if (to != -1 && !used[to]) {
+            dfs(to);
+        }
+    }
+    tops.push_back(v);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    int n, U;
+    cin >> n >> U;
+    t = {{}};
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i];
+        --a[i];
+    }
+    int v = 0;
+    for (int x : a) {
+        v = add(v, x);
+    }
+    for (int gg = 0; gg < sz(t); ++gg) {
+        if (!used[v]) dfs(gg);
+    }
+    reverse(all(tops));
+    for (int i : tops) {
+        for (int to : t[i].nxt)
+            if (to != -1)
+                ckmx(t[to].depth, t[i].depth + 1);
+    }
+//    for (int i = 0; i < sz(t); ++i)
+//        trace(t[i].depth)
+    reverse(all(tops));
+//    for (int i : tops) {
+//        assert(t[i].depth == t[t[i].prev].depth + 1);
+//    }
+    while (v != -1) {
+        t[v].cnt = 1;
+        v = t[v].suf;
+    }
+    for (int i : tops) {
+        for (int to : t[i].nxt) {
+            if (to != -1)
+                t[i].cnt += t[to].cnt;
+        }
+    }
+    pair<ll, int> ans = {-infL, 0};
+    for (int i = 0; i < sz(t); ++i) {
+        ans = max(ans, mp(t[i].depth * t[i].cnt, i));
+    }
+    v = ans.second;
+    vector<int> aa;
+    while (v != 0) {
+        aa.push_back(t[v].pc);
+        v = t[v].prev;
+    }
+    reverse(all(aa));
+    cout << ans.first << "\n" << sz(aa) << "\n";
+    for (int x : aa) {
+        assert(x != -1);
+        cout << x + 1 << " ";
+    }
+    return 0;
+}

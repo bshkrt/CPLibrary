@@ -1,0 +1,78 @@
+constexpr int inf = 0x3f3f3f3f, A = 27, N = 4e6 + 10;
+
+int sz_t = 0, sz_s = 0;
+
+int l[N], len[N], suf[N], par[N], go[A][N];
+int s[N];
+
+int vert = 0, pos = 0;
+
+int create_node(int _par = 0, int _l = 0, int _len = 0) {
+    par[sz_t] = _par, l[sz_t] = _l, len[sz_t] = _len;
+    for (int i = 0; i < A; ++i) go[i][sz_t] = 0;
+    return sz_t++;
+}
+
+int cut_edge(int v, int c, int new_len) {
+    int to = go[c][v];
+    int prev_len = len[to], prev_l = l[to];
+    int new_v = create_node(v, prev_l, new_len);
+    go[c][v] = new_v;
+    go[s[prev_l + new_len]][new_v] = to;
+    len[to] = prev_len - new_len, l[to] = prev_l + new_len, par[to] = new_v;
+    return new_v;
+}
+
+void normalize() {
+    int nxt = s[sz_s - pos];
+    while (len[go[nxt][vert]] < pos) {
+        pos -= len[go[nxt][vert]];
+        vert = go[nxt][vert];
+        nxt = s[sz_s - pos];
+    }
+}
+
+void init() {
+    sz_t = 0;
+    create_node(0, 0, inf);
+    sz_s = 0;
+    vert = pos = 0;
+}
+
+void add_char(int C) {
+    s[sz_s++] = C;
+    ++pos;
+    int last = -1;
+    while (pos > 0) {
+        normalize();
+        int curc = s[sz_s - pos];
+        if (!go[curc][vert]) {
+            int to = create_node(vert, sz_s - pos, inf);
+            if (last != -1) {
+                suf[last] = vert;
+            }
+            last = -1;
+            go[curc][vert] = to;
+        } else {
+            int newc = s[l[go[curc][vert]] + pos - 1];
+            if (newc == C) {
+                if (last != -1) {
+                    suf[last] = vert;
+                }
+                break;
+            } else {
+                int mid = cut_edge(vert, curc, pos - 1);
+                go[C][mid] = create_node(mid, sz_s - 1, inf);
+                if (last != -1) {
+                    suf[last] = mid;
+                }
+                last = mid;
+            }
+        }
+        if (vert == 0) {
+            --pos;
+        } else {
+            vert = suf[vert];
+        }
+    }
+}

@@ -1,0 +1,124 @@
+struct Info {
+    Info() = default;
+};
+
+Info operator+(const Info &a, const Info &b) {
+    Info res;
+    return res;
+}
+
+void apply(Info &a, int b) {
+}
+
+void apply(int &a, int b) {
+}
+
+template<class Info, class Tag,
+        class Merge = plus<Info>>1
+struct LazySegmentTree {
+    const int sz{};
+    const Merge merge;
+    vector<Info> t;
+    vector<Tag> tag;
+
+    LazySegmentTree() = default;
+
+    LazySegmentTree(int n) : sz(n), merge(Merge()), t(4 << __lg(n)), tag(4 << __lg(n)) {}
+
+    LazySegmentTree(int n, const Info &v = Info()): sz(n), merge(Merge()), t(4 << __lg(n)), tag(4 << __lg(n)) {
+        function<void(int, int, int)> build = [&](int p, int l, int r) {
+            if (r - l == 1) {
+                t[p] = v;
+                return;
+            }
+            int m = (l + r) >> 1;
+            build(p << 1, l, m);
+            build(p << 1 | 1, m, r);
+            pull(p);
+        };
+        build(1, 0, sz);
+    }
+
+    LazySegmentTree(const vector<Info> &a): sz(a.size()), merge(Merge()), t(4 << __lg(a.size())), tag(4 << __lg(a.size())) {
+        function<void(int, int, int)> build = [&](int p, int l, int r) {
+            if (r - l == 1) {
+                t[p] = a[l];
+                return;
+            }
+            int m = (l + r) >> 1;
+            build(p << 1, l, m);
+            build(p << 1 | 1, m, r);
+            pull(p);
+        };
+        build(1, 0, sz);
+    }
+
+    void pull(int x) {
+        t[x] = merge(t[x << 1], t[x << 1 | 1]);
+    }
+
+    void apply(int p, const Tag &v) {
+        ::apply(t[p], v);
+        ::apply(tag[p], v);
+    }
+
+    void push(int x) {
+        apply(x << 1, tag[x]);
+        apply(x << 1 | 1, tag[x]);
+        tag[x] = Tag();
+    }
+
+    void modify(int i, const Info &v, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            t[x] = v;
+            return;
+        }
+        int m = (lx + rx) >> 1;
+        push(x);
+        if (i < m) {
+            modify(x << 1, lx, m, i, v);
+        } else {
+            modify(x << 1 | 1, m, rx, i, v);
+        }
+        pull(x);
+    }
+
+    void modify(int p, const Info &v) {
+        modify(p, v, 1, 0, sz);
+    }
+
+    Info rangeQuery(int l, int r, int x, int lx, int rx) {
+        if (l >= rx || lx >= r) {
+            return Info();
+        }
+        if (l <= lx && rx <= r) {
+            return t[x];
+        }
+        int m = (lx + rx) >> 1;
+        push(x);
+        return merge(rangeQuery(l, r, x << 1, lx, m), rangeQuery(l, r, x << 1 | 1, m, rx));
+    }
+
+    Info rangeQuery(int l, int r) {
+        return rangeQuery(l, r, 1, 0, sz);
+    }
+
+    void rangeApply(int l, int r, const Tag v, int x, int lx, int rx) {
+        if (l >= rx || lx >= r) {
+            return;
+        }
+        if (l <= lx && rx <= r) {
+            apply(x, v);
+            return;
+        }
+        int m = (lx + rx) >> 1;
+        push(x);
+        rangeApply(l, r, v, x << 1, lx, m);
+        rangeApply(l, r, v, x << 1 | 1, m, rx);
+        pull(x);
+    }
+
+    void rangeApply(int l, int r, const Tag v) {
+        rangeApply(l, r, v, 1, 0, sz);
+    }
+};

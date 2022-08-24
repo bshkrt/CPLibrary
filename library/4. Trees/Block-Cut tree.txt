@@ -1,0 +1,44 @@
+vector<pair<int, int>> g[N];
+
+int tin[N], fup[N], col[M], last = 0, T = 0, n, m, sz[N + N];
+
+vector<int> new_g[N + N];
+
+bool used[N];
+
+void precalc(int v, int p) {
+    used[v] = true;
+    tin[v] = fup[v] = T++;
+    for (auto [to, i]: g[v]) {
+        if (to == p) continue;
+        if (!used[to]) {
+            precalc(to, v);
+            fup[v] = min(fup[v], fup[to]);
+        } else {
+            fup[v] = min(fup[v], tin[to]);
+        }
+    }
+}
+
+void zhfs(int v, int j) {
+    if (j != -1) {
+        new_g[col[j] + n].push_back(v);
+        new_g[v].push_back(col[j] + n);
+    }
+    used[v] = true;
+    for (auto [to, i]: g[v]) {
+        if (i == j) continue;
+        if (!used[to]) {
+            if (j == -1 || fup[to] >= tin[v]) {
+                col[i] = last++;
+                new_g[v].push_back(col[i] + n);
+                new_g[col[i] + n].push_back(v);
+            } else {
+                col[i] = col[j];
+            }
+            zhfs(to, i);
+        } else if (tin[to] < tin[v]) {
+            col[i] = col[j];
+        }
+    }
+}

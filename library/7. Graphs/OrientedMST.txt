@@ -1,0 +1,218 @@
+using ll = long long;
+
+struct node {
+    pair<int, int> key;
+    int rank = 0, from = 0;
+    vector<node *> adj;
+
+    node() = default;
+
+    node(pair<int, int> k, int _from) {
+        key = k;
+        from = _from;
+    }
+};
+
+bool comp(node *a, node *b) {
+    return a->rank < b->rank;
+}
+
+void applyNode(node *v, int x) {
+    if (!v) return;
+    v->key.first += x;
+    for (node *to: v->adj) {
+        applyNode(to, x);
+    }
+}
+
+node *mrg(node *a, node *b) {
+    if (!a) return b;
+    if (!b) return a;
+    if (a->key > b->key) {
+        swap(a, b);
+    }
+    a->adj.push_back(b);
+    ++a->rank;
+    return a;
+}
+
+struct Heap {
+    int waterlevel = 0;
+
+    vector<node *> t;
+
+    Heap() = default;
+
+    Heap(node *r) {
+        t = {r};
+    }
+
+    Heap(vector<node *> &v, int _waterlevel = 0) {
+        swap(t, v);
+        waterlevel = _waterlevel;
+    }
+
+    int size() const {
+        int ans = 0;
+        for (node *v: t) ans += 1 << (v->rank);
+        return ans;
+    }
+
+    bool empty() const {
+        return t.empty();
+    }
+
+    void clear() {
+        t.clear();
+    }
+
+    void apply(int x) {
+        for (node *v: t) {
+            applyNode(v, x);
+        }
+    }
+
+    node *top() {
+        node *ans = t[0];
+        for (int i = 1; i < (int) t.size(); ++i) {
+            if (ans->key > t[i]->key) {
+                ans = t[i];
+            }
+        }
+        return ans;
+    }
+
+    friend Heap operator+(Heap &a, Heap &b) {
+        if (a.empty()) return b;
+        if (b.empty()) return a;
+        if (a.size() < b.size()) swap(a, b);
+        if (a.waterlevel != b.waterlevel) {
+            b.apply(b.waterlevel + -a.waterlevel);
+            b.waterlevel = 0;
+        }
+        vector<node *> ans, temp;
+        temp.resize(a.t.size() + b.t.size());
+        std::merge(a.t.begin(), a.t.end(), b.t.begin(), b.t.end(), temp.begin(), comp);
+        node *A = nullptr;
+        for (node *B: temp) {
+            if (A && B->rank < A->rank) {
+                ans.push_back(B);
+                continue;
+            }
+            if (A && A->rank == B->rank) {
+                A = mrg(A, B);
+            } else {
+                if (A) {
+                    ans.push_back(A);
+                }
+                A = B;
+            }
+        }
+        if (A) {
+            ans.push_back(A);
+        }
+        b.clear();
+        a.clear();
+        return {ans, a.waterlevel};
+    }
+
+    Heap &operator+=(Heap &b) {
+        return (*this) = (*this) + b;
+    }
+
+    void pop() {
+        if (t.empty()) return;
+        int id = 0;
+        node *ans = t[0];
+        for (int i = 1; i < (int) t.size(); ++i) {
+            if (ans->key > t[i]->key) {
+                id = i;
+                ans = t[i];
+            }
+        }
+        t.erase(t.begin() + id);
+        Heap gg(ans->adj, waterlevel);
+        (*this) += gg;
+    }
+};
+
+struct dsu {
+    vector<int> p;
+
+    explicit dsu(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+    }
+
+    dsu() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        p[b] = a;
+        return true;
+    }
+};
+
+ll OrientedMST(int n, vector<array<int, 3>> &e) { //assume that answer is not INF
+    int m = (int) e.size();
+    vector<Heap> h(n);
+    for (int i = 0; i < m; ++i) {
+        auto &[a, b, w] = e[i];
+        Heap gg(new node({w, i}, a));
+        h[b] += gg;
+    }
+    ll ans = 0;
+    dsu d(n);
+    vector<bool> used(n);
+    auto normalize = [&](int i) {
+        while (!h[i].empty()) {
+            if (d.get(h[i].top()->from) == i) {
+                h[i].pop();
+            } else {
+                break;
+            }
+        }
+    };
+    auto mrg = [&](int i, int j) {
+        d.mrg(i, j);
+        h[i] += h[j];
+        h[j].clear();
+    };
+    used[0] = true;
+    for (int j = 1; j < n; ++j) {
+        if (!used[j]) {
+            vector stk = {0, j};
+            while (stk.size() > 1) {
+                int i = stk.back();
+                used[i] = true;
+                normalize(i);
+                node *g = h[i].top();
+                int p = d.get(g->from);
+                int W = g->key.first + h[i].waterlevel;
+                ans += W;
+                h[i].waterlevel -= W;
+                h[i].pop();
+                stk.push_back(p);
+                i = p;
+                if (used[i]) {
+                    stk.pop_back();
+                    while (stk.back() != i) {
+                        int pp = stk.back();
+                        stk.pop_back();
+                        mrg(i, pp);
+                    }
+                }
+            }
+        }
+    }
+    return ans;
+}

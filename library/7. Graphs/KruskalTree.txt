@@ -1,0 +1,150 @@
+struct dsuLeader {
+    vector<int> p, sz, leader;
+
+    explicit dsuLeader(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+        leader = p;
+        sz.assign(n, 1);
+    }
+
+    dsuLeader() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b, int x = -1) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        if (sz[a] < sz[b]) swap(a, b);
+        p[b] = a;
+        sz[a] += sz[b];
+        if (x != -1) leader[a] = x;
+        return true;
+    }
+
+    int lead(int x) {
+        return leader[get(x)];
+    }
+
+    int size(int a) {
+        return sz[get(a)];
+    }
+};
+
+struct KruskalTree {
+    vector<int> tin, tout, ord, depth;
+    vector<vector<int>> g, jump;
+    vector<int> w;
+    int n{}, m{}, logn{};
+
+    KruskalTree() = default;
+
+    void init(vector<array<int, 3>> &e, int _n) {
+        n = _n;
+        m = (int) e.size();
+        w.resize(m), g.resize(n + m), tin.resize(n + m),
+                tout.resize(n + m), depth.resize(n + m);
+        int last = n;
+        dsuLeader d(n + m);
+        logn = __lg(m) + 1;
+        jump.resize(logn);
+        for (int i = 0; i < logn; ++i) {
+            jump[i].assign(n + m, -1);
+        }
+        for (int i = 0; i < m; ++i) {
+            w[i] = e[i][0];
+            if (!d.same(e[i][1], e[i][2])) {
+                int pa = d.lead(e[i][1]), pb = d.lead(e[i][2]);
+                g[last].push_back(pa);
+                g[last].push_back(pb);
+                d.mrg(last, e[i][2], last);
+            } else {
+                int pa = d.lead(e[i][1]);
+                g[last].push_back(pa);
+            }
+            d.mrg(last, e[i][1], last);
+            last += 1;
+        }
+        int T = 0;
+        function<void(int, int)> dfs = [&](int v, int par) {
+            jump[0][v] = par;
+            tin[v] = T;
+            if (v < n) {
+                ord.push_back(v);
+                ++T;
+            }
+            for (int to: g[v]) {
+                depth[to] = depth[v] + 1;
+                dfs(to, v);
+            }
+            tout[v] = T;
+        };
+        for (int i = last - 1; i > -1; --i) {
+            if (jump[0][i] == -1) {
+                dfs(i, i);
+            }
+        }
+        for (int j = 1; j < logn; ++j) {
+            for (int i = 0; i < n + m; ++i) {
+                jump[j][i] = jump[j - 1][jump[j - 1][i]];
+            }
+        }
+    }
+
+    KruskalTree(vector<array<int, 3>> &e, int _n) { //w, a, b
+        init(e, _n);
+    }
+
+    KruskalTree(vector<int> &w, vector<int> &a, vector<int> &b, int _n) {
+        assert(w.size() == a.size() && a.size() == b.size());
+        m = (int) w.size();
+        vector<array<int, 3>> e(m);
+        for (int i = 0; i < m; ++i) {
+            e[i][0] = w[i], e[i][1] = a[i], e[i][2] = b[i];
+        }
+        init(e, _n);
+    }
+
+
+    int path(int a, int b) { //they have to be connected and returns min or max weight on path (depends on a tree)
+        assert(a >= 0 && a < n && b >= 0 && b < n && a != b);
+        if (depth[a] < depth[b]) swap(a, b);
+        for (int j = logn - 1; j > -1; --j) {
+            if (depth[jump[j][a]] >= depth[b]) {
+                a = jump[j][a];
+            }
+        }
+        for (int j = logn - 1; j > -1; --j) {
+            if (jump[j][a] != jump[j][b]) {
+                a = jump[j][a], b = jump[j][b];
+            }
+        }
+        return w[jump[0][a] - n];
+    }
+
+
+    pair<int, int> connected_smaller(int a, int weight) {
+        for (int j = logn - 1; j > -1; --j) {
+            if (w[jump[j][a] - n] <= weight) {
+                a = jump[j][a];
+            }
+        }
+        return {tin[a], tout[a]};
+    }
+
+    pair<int, int> connected_bigger(int a, int weight) {
+        for (int j = logn - 1; j > -1; --j) {
+            if (w[jump[j][a] - n] >= weight) {
+                a = jump[j][a];
+            }
+        }
+        return {tin[a], tout[a]};
+    }
+
+}; //check weights of edges and can_go

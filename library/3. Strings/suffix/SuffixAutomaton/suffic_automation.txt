@@ -1,0 +1,52 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+
+
+const int A = 26;
+struct node {
+    int nxt[A]{};
+    int suf, prev;
+
+    node() {
+        memset(nxt, -1, sizeof(nxt));
+        suf = prev = -1;
+    }
+};
+
+vector<node> t;
+
+int add(int a, int x) {
+    int b = -1;
+    if (t[a].nxt[x] == -1) {
+        b = size(t);
+        t.emplace_back();
+        t[b].prev = a, t[b].suf = 0;
+    }
+    int AA = a;
+    for (; a != -1; a = t[a].suf) {
+        if (t[a].nxt[x] == -1) {
+            t[a].nxt[x] = b;
+            continue;
+        }
+        int c = t[a].nxt[x];
+        if (t[c].prev == a) {
+            if (b != -1)
+                t[b].suf = c;
+        } else {
+            int d = size(t);
+            t.emplace_back();
+            t[d].suf = t[c].suf;
+            t[c].suf = d;
+            if (b != -1)
+                t[b].suf = d;
+            t[d].prev = a;
+            memcpy(t[d].nxt, t[c].nxt, sizeof(t[c].nxt));
+            for (; a != -1 && t[a].nxt[x] == c; a = t[a].suf) {
+                t[a].nxt[x] = d;
+            }
+        }
+        break;
+    }
+    return t[AA].nxt[x];
+}

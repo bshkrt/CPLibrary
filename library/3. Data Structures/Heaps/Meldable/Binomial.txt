@@ -1,0 +1,175 @@
+struct node {
+    pair<int, int> key;
+    int rank = 0, HeapId = -228, idx = 0;
+    node *p = nullptr;
+    vector<node *> adj;
+
+    node() = default;
+
+    node(pair<int, int> k, int x) {
+        key = k;
+        idx = k.second;
+        HeapId = x;
+    }
+};
+
+
+constexpr int N = 1e6 + 7;
+
+node *nodes[N];
+
+void swapPar(node *v) {
+    if (v->p) {
+        node *p = v->p;
+        swap(v->key, p->key), swap(v->idx, p->idx);
+        swap(nodes[v->idx], nodes[p->idx]);
+    }
+}
+
+int getId(node *v) {
+    if (!v) return -1;
+    while (v->p) v = v->p;
+    return v->HeapId;
+}
+
+node *mrg(node *a, node *b) {
+    if (!a) return b;
+    if (!b) return a;
+    b->HeapId = a->HeapId;
+    if (a->key > b->key) {
+        swap(a, b);
+    }
+    a->adj.push_back(b);
+    b->p = a;
+    a->rank += 1;
+    return a;
+}
+
+struct BinomialHeap {
+    vector<node *> t;
+
+    int key;
+
+    BinomialHeap() = default;
+
+    BinomialHeap(node *r) {
+        t = {r};
+    }
+
+    BinomialHeap(vector<node *> v, int kkey = -228) {
+        swap(t, v);
+        key = kkey;
+    }
+
+    int size() const {
+        return (int) t.size();
+    }
+
+    bool empty() const {
+        return t.empty();
+    }
+
+    void clear() {
+        t.clear();
+    }
+
+    node *top() {
+        if (t.empty()) return nullptr;
+        node *ans = t[0];
+        for (int i = 1; i < (int) t.size(); ++i) {
+            if (ans->key > t[i]->key) {
+                ans = t[i];
+            }
+        }
+        return ans;
+    }
+
+    static BinomialHeap merge(BinomialHeap a, BinomialHeap b, int root) {
+        if (a.empty()) {
+            for (node *v: b.t) v->HeapId = root;
+            b.key = root;
+            return b;
+        }
+        if (b.empty()) {
+            for (node *v: a.t) v->HeapId = root;
+            a.key = root;
+            return a;
+        }
+        vector<node *> ans, temp;
+        temp.resize(a.t.size() + b.t.size());
+        std::merge(a.t.begin(), a.t.end(), b.t.begin(), b.t.end(), temp.begin(), [](node *x, node *y) {
+            return x->rank < y->rank;
+        });
+        a.key = root;
+        node *A = nullptr;
+        for (node *B: temp) {
+            if (A && B->rank < A->rank) {
+                ans.push_back(B);
+                continue;
+            }
+            if (A && A->rank == B->rank) {
+                A = mrg(A, B);
+            } else {
+                if (A) {
+                    ans.push_back(A);
+                }
+                A = B;
+            }
+        }
+        if (A) {
+            ans.push_back(A);
+        }
+        for (node *v: ans) {
+            v->HeapId = root;
+        }
+        return BinomialHeap(ans, root);
+    }
+
+    void pop() {
+        if (t.empty()) return;
+        int id = 0;
+        node *ans = t[0];
+        for (int i = 1; i < (int) t.size(); ++i) {
+            if (ans->key > t[i]->key) {
+                id = i;
+                ans = t[i];
+            }
+        }
+        t.erase(t.begin() + id);
+        for (auto to: ans->adj) {
+            to->p = nullptr;
+        }
+        (*this) = merge(*this, ans->adj, key);
+        ans->adj.clear();
+        ans->rank = 0;
+        ans->HeapId = -1;
+    }
+
+    void erase(node *v) {
+        if (!v) return;
+        if (v->p == nullptr) {
+            int id = -1;
+            for (int i = 0; i < (int) t.size(); ++i) {
+                if (t[i]->key.second == v->key.second) {
+                    id = i;
+                    break;
+                }
+            }
+            t.erase(t.begin() + id);
+            for (auto to: v->adj) {
+                to->p = nullptr;
+            }
+            (*this) = merge(*this, v->adj, key);
+            v->adj.clear();
+            v->rank = 0;
+            v->HeapId = -1;
+        } else {
+            swapPar(v);
+            erase(v->p);
+        }
+    }
+};
+
+BinomialHeap merge(BinomialHeap a, BinomialHeap b, int root) {
+    return BinomialHeap::merge(a, b, root);
+}

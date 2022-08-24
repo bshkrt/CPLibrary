@@ -1,0 +1,91 @@
+mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+
+struct node {
+    int y, sz = 0, L = 0, R = 0;
+    ll key = 0, val = 0, sumVal = 0, sumN = 0, add = 0;
+
+    node() = default;
+
+    node(ll a, int b, ll c) {
+        key = a, y = b, val = c, sz = 1, sumN = c * (c - 1) >> 1, sumVal = c;
+    }
+};
+
+vector<node> t = {node()};
+int root = 0;
+
+void pull(int x) {
+    t[x].sz = 1 + t[t[x].L].sz + t[t[x].R].sz;
+    ll valLR = t[t[x].L].sumVal + t[t[x].R].sumVal;
+    t[x].sumVal = t[x].val + valLR + t[x].add * (t[x].sz - 1);
+    t[x].sumN = (t[x].val * (t[x].val - 1) + t[x].add * (t[x].add - 1) * (t[x].sz - 1)) / 2 + t[t[x].L].sumN +
+                t[t[x].R].sumN + t[x].add * valLR;
+}
+
+int create(ll key, ll val) {
+    int siz = (int) t.size();
+    t.emplace_back(key, rng(), val);
+    return siz;
+}
+
+void Add(int x, ll v) {
+    if (!x) return;
+    t[x].val += v;
+    t[x].add += v;
+    t[x].sumN += t[x].sumVal * v + ((v - 1) * v * t[x].sz >> 1);
+    t[x].sumVal += v * t[x].sz;
+}
+
+void push(int x) {
+    if (t[x].L) Add(t[x].L, t[x].add);
+    if (t[x].R) Add(t[x].R, t[x].add);
+    t[x].add = 0;
+}
+
+int merge(int l, int r) {
+    if (!l || !r) return l ^ r;
+    push(l), push(r);
+    if (t[l].y > t[r].y) {
+        t[l].R = merge(t[l].R, r);
+        pull(l);
+        return l;
+    } else {
+        t[r].L = merge(l, t[r].L);
+        pull(r);
+        return r;
+    }
+}
+
+//key <= k
+pair<int, int> split(int x, ll k) {
+    if (!x) return {};
+    push(x);
+    if (t[x].key > k) {
+        auto se = split(t[x].L, k);
+        t[x].L = se.second;
+        pull(x);
+        return {se.first, x};
+    } else {
+        auto se = split(t[x].R, k);
+        t[x].R = se.first;
+        pull(x);
+        return {x, se.second};
+    }
+}
+
+void dfs(int x, vector<int> &tt) {
+    if (!x) return;
+    push(x);
+    dfs(t[x].L, tt);
+    tt.push_back(x);
+    dfs(t[x].R, tt);
+}
+
+void gfs(int x) {
+    cout << "sub: " << x << endl;
+    vector<int> ord;
+    dfs(x, ord);
+    for (int y : ord) {
+        cout << t[y].key << " " << t[y].val << endl;
+    }
+}

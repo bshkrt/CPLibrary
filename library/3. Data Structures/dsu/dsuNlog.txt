@@ -1,0 +1,24 @@
+struct dsu {
+    vector<int> p;
+    explicit dsu(int n) {
+        p.resize(n);
+        iota(p.begin(), p.end(), 0);
+    }
+
+    dsu() = default;
+
+    int get(int x) {
+        return (p[x] == x ? x : p[x] = get(p[x]));
+    }
+
+    bool same(int a, int b) {
+        return get(a) == get(b);
+    }
+
+    bool mrg(int a, int b) {
+        a = get(a), b = get(b);
+        if (a == b) return false;
+        p[b] = a;
+        return true;
+    }
+};

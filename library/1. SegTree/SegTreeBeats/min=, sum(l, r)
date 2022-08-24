@@ -1,0 +1,92 @@
+struct SegTreeSetMin {
+    int sz = 1;
+
+    struct node {
+        int mx;
+        int cntmx;
+        int mx2 = -infI;
+        ll sum;
+
+        node() = default;
+
+        node(int x) {
+            sum = mx = x, cntmx = 1;
+            mx2 = -infI;
+        }
+    };
+
+    vector<node> t;
+
+    node mrg(node a, node b) {
+        node ans{};
+        ans.sum = a.sum + b.sum;
+        ans.mx = max(a.mx, b.mx);
+        ans.mx2 = max(a.mx2, b.mx2);
+
+        if (ans.mx == a.mx) {
+            ans.cntmx += a.cntmx;
+        } else {
+            ans.mx2 = max(ans.mx2, a.mx);
+        }
+
+        if (ans.mx == b.mx) {
+            ans.cntmx += b.cntmx;
+        } else {
+            ans.mx2 = max(ans.mx2, b.mx);
+        }
+
+        return ans;
+    }
+
+    SegTreeSetMin() = default;
+
+    SegTreeSetMin(int n, vector<int> a) {
+        while (sz < n) sz <<= 1;
+        t.resize(sz << 1);
+        for (int i = 0; i < n; ++i) {
+            t[i + sz] = node(a[i]);
+        }
+        for (int i = sz - 1; i > 0; --i) {
+            t[i] = mrg(t[i << 1], t[i << 1 | 1]);
+        }
+    }
+
+    void PushSetMin(int v, int val) {
+        if (t[v].mx > val) {
+            t[v].sum -= ((ll) t[v].mx - val) * t[v].cntmx;
+            t[v].mx = val;
+        }
+    };
+
+    void push(int v) {
+        PushSetMin(v << 1, t[v].mx), PushSetMin(v << 1 | 1, t[v].mx);
+    }
+
+    void setmin(int l, int r, int v, int x, int lx, int rx) {
+        if (l >= rx || lx >= r || t[x].mx <= v) return;
+        if (l <= lx && rx <= r && t[x].mx2 < v) {
+            PushSetMin(x, v);
+            return;
+        }
+        push(x);
+        int m = (lx + rx) >> 1;
+        setmin(l, r, v, x << 1, lx, m), setmin(l, r, v, x << 1 | 1, m, rx);
+        t[x] = mrg(t[x << 1], t[x << 1 | 1]);
+    }
+
+    void setmin(int l, int r, int v) {
+        setmin(l, r, v, 1, 0, sz);
+    }
+
+    node get(int l, int r, int x, int lx, int rx) {
+        if (l >= rx || lx >= r) return node();
+        if (l <= lx && rx <= r) return t[x];
+        push(x);
+        int m = (lx + rx) >> 1;
+        return mrg(get(l, r, x << 1, lx, m), get(l, r, x << 1 | 1, m, rx));
+    }
+
+    node get(int l, int r) {
+        return get(l, r, 1, 0, sz);
+    }
+};

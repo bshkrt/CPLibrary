@@ -1,0 +1,76 @@
+struct LinearLCA {
+    vector<int> depth, jump, parent;
+    int n{}, root = 0;
+
+    LinearLCA() = default;
+
+    int lca(int v, int u) {
+        if (depth[v] > depth[u]) {
+            v = la(v, depth[v] - depth[u]);
+        } else {
+            u = la(u, depth[u] - depth[v]);
+        }
+        while (v != u) {
+            if (jump[v] != jump[u]) {
+                v = jump[v];
+                u = jump[u];
+            } else {
+                v = parent[v];
+                u = parent[u];
+            }
+        }
+        return v;
+    }
+
+    int la(int v, int h) {
+        h = max(depth[v] - h, 0);
+        while (depth[v] != h) {
+            if (depth[jump[v]] >= h) {
+                v = jump[v];
+            } else {
+                v = parent[v];
+            }
+        }
+        return v;
+    }
+
+    void add_leaf(int v, int p) {
+        parent[v] = p;
+        depth[v] = depth[p] + 1;
+        if (depth[p] - depth[jump[p]] == depth[jump[p]] - depth[jump[jump[p]]]) {
+            jump[v] = jump[jump[p]];
+        } else {
+            jump[v] = p;
+        }
+    }
+
+    LinearLCA(int _n, vector<int> g[], int _root = 0) {
+        init(_n, g, _root);
+    }
+
+    LinearLCA(int _n, vector<vector<int>> &g, int _root = 0) {
+        init(_n, g.data(), _root);
+    }
+
+    void init(int _n, vector<vector<int>> &g, int _root = 0) {
+        init(_n, g.data(), _root);
+    }
+
+    void init(int _n, vector<int> g[], int _root = 0) {
+        n = _n;
+        root = _root;
+        depth.assign(n, 0), parent.assign(n, root), jump.assign(n, root);
+        function<void(int, int)> dfs = [&](int v, int p) {
+            if (v != root) {
+                add_leaf(v, p);
+            }
+            for (int to: g[v]) {
+                if (to != p) {
+                    dfs(to, v);
+                }
+            }
+        };
+        dfs(root, -1);
+
+    }
+};

@@ -1,0 +1,50 @@
+//thanks, ormlis!
+struct SmartFenwick {
+    vector<long long> k, b; //kx + b
+    int n;
+
+    SmartFenwick(int x) {
+        n = x;
+        k.assign(x, 0), b.assign(x, 0);
+    }
+
+    SmartFenwick() = default;
+
+    void init(int x) {
+        n = x;
+        k.assign(x, 0);
+        b.assign(x, 0);
+    }
+
+    void add1(int i, long long mul, long long ad) {
+        while (i < n) {
+            k[i] += mul;
+            b[i] += ad;
+            i |= (i + 1);
+        }
+    }
+    //[l, r)
+    void modify(int l, int r, long long v) {
+        add1(l, v, -v * (l - 1));
+        add1(r, -v, v * (r - 1));
+    }
+
+    void modify(int i, long long v) {
+        add1(i, 0, v);
+    }
+
+    long long get(int i) {
+        int start = i;
+        long long mul = 0, add = 0;
+        while (i >= 0) {
+            mul += k[i];
+            add += b[i];
+            i = ((i + 1) & i) - 1;
+        }
+        return mul * start + add;
+    }
+    //[l, r)
+    long long get(int l, int r) {
+        return get(r - 1) - get(l - 1);
+    }
+};

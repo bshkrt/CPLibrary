@@ -1,0 +1,54 @@
+struct SegTreeMin {
+    vector<int> t;
+    int sz = 1;
+
+    void init(int n) {
+        while (sz < n) sz <<= 1;
+        t.resize(sz << 1);
+    }
+
+    void st(int i, int v) {
+        int x = i + sz;
+        while (x) {
+            t[x] = min(t[x], v);
+            x >>= 1;
+        }
+    }
+
+    int GetMin(int l, int r, int x, int lx, int rx) {
+        if (l >= rx || lx >= r) return infI;
+        if (l <= lx && rx <= r) return t[x];
+        int m = (lx + rx) >> 1;
+        return min(GetMin(l, r, x << 1, lx, m), GetMin(l, r, x << 1 | 1, m, rx));
+    }
+
+    int GetFirst(int l, int r, int k, int x, int lx, int rx) {
+        if (l >= rx || lx >= r || t[x] > k) return -1;
+        if (lx + 1 == rx) return lx;
+        int m = (lx + rx) >> 1;
+        int ans = GetFirst(l, r, k, x << 1, lx, m);
+        if (ans != -1) return ans;
+        return GetFirst(l, r, k, x << 1 | 1, m, rx);
+    }
+
+    int GetLast(int l, int r, int k, int x, int lx, int rx) {
+        if (l >= rx || lx >= r || t[x] > k) return -1;
+        if (lx + 1 == rx) return lx;
+        int m = (lx + rx) >> 1;
+        int ans = GetLast(l, r, k, x << 1 | 1, m, rx);
+        if (ans != -1) return ans;
+        return GetLast(l, r, k, x << 1, lx, m);
+    }
+
+    int GetMin(int l, int r) {
+        return GetMin(l, r, 1, 0, sz);
+    }
+
+    int GetLast(int l, int r, int k) {
+        return GetLast(l, r, k, 1, 0, sz);
+    }
+
+    int GetFirst(int l, int r, int k) {
+        return GetFirst(l, r, k, 1, 0, sz);
+    }
+};

@@ -1,0 +1,49 @@
+//thanks, ormlis!
+
+const int maxN = 5e5 + 10;
+
+int psq[maxN];
+
+void initFFT() {
+    int s = 31;
+    for (int i = (1 << 23); i >= 1; i /= 2, s = mul(s, s)) {
+        if (i < maxN) psq[i] = s;
+    }
+}
+
+void fft(vector<int> &s, vector<int> &res, int n, int x, int ss = 0, int step = 1, int rs = 0) {
+    if (n == 1) {
+        res[rs] = s[ss];
+        return;
+    }
+    fft(s, res, n >> 1, mul(x, x), ss, step << 1, rs);
+    fft(s, res, n >> 1, mul(x, x), ss + step, step << 1, rs + n / 2);
+    int c = 1;
+    for (int i = rs; i < rs + n / 2; ++i) {
+        auto a = res[i], b = res[i + n / 2];
+        res[i] = add(a, mul(b, c));
+        res[i + n / 2] = sub(a, mul(b, c));
+        c = mul(c, x);
+    }
+}
+
+vector<int> multiply(vector<int> &a, vector<int> &b) {
+    vector<int> as(a.begin(), a.end()), bs(b.begin(), b.end());
+    int n = 1;
+    while (n < a.size() || n < b.size()) n <<= 1;
+    n <<= 1;
+    as.resize(n);
+    bs.resize(n);
+    int t = psq[n];
+    vector<int> resa(n), resb(n);
+    fft(as, resa, n, t);
+    fft(bs, resb, n, t);
+    for (int i = 0; i < n; ++i)
+        resa[i] = mul(resa[i], resb[i]);
+    t = rev(t);
+    fft(resa, as, n, t);
+    int rn = rev(n);
+    for (int i = 0; i < n; ++i)
+        as[i] = mul(as[i], rn);
+    return as;
+}

@@ -1,0 +1,86 @@
+struct LCA {
+    vector<vector<int>> jump;
+    vector<int> depth;
+    int n{}, max_log{}, root = 0;
+
+    LCA() = default;
+
+    int lca(int a, int b) {
+        if (depth[a] < depth[b]) swap(a, b);
+        for (int j = max_log - 1; j > -1; --j) {
+            if (depth[jump[j][a]] >= depth[b]) {
+                a = jump[j][a];
+            }
+        }
+        if (a == b) {
+            return a;
+        }
+        for (int j = max_log - 1; j > -1; --j) {
+            if (jump[j][a] != jump[j][b]) {
+                a = jump[j][a];
+                b = jump[j][b];
+            }
+        }
+        return jump[0][a];
+    }
+
+    int la(int a, int h) {
+        for (int i = max_log - 1; i > -1; --i) {
+            if (h >= (1 << i)) {
+                h -= 1 << i;
+                a = jump[i][a];
+            }
+        }
+        return a;
+    }
+
+    void add_leaf(int v, int par) {
+        depth[v] = depth[par] + 1;
+        jump[0][v] = par;
+        for (int j = 1; j < max_log; ++j) {
+            jump[j][v] = jump[j - 1][jump[j - 1][v]];
+        }
+    }
+
+    LCA(int _n, vector<int> g[], int _root = 0) {
+        init(_n, g, _root);
+    }
+
+    LCA(int _n, vector<vector<int>> &g, int _root = 0) {
+        init(_n, g.data(), _root);
+    }
+
+    void init(int _n, vector<vector<int>> &g, int _root = 0) {
+        init(_n, g.data(), _root);
+    }
+
+    void init(int _n, vector<int> g[], int _root = 0) {
+        n = _n;
+        root = _root;
+        depth.assign(n, 0);
+        jump.assign(1, vector<int>(n, root));
+        function<void(int, int)> dfs = [&](int v, int p) {
+            if (v != root) {
+                jump[0][v] = p;
+                depth[v] = depth[p] + 1;
+            }
+            for (int to: g[v]) {
+                if (to != p) {
+                    dfs(to, v);
+                }
+            }
+        };
+        dfs(root, -1);
+        int hh = 1, mx = *max_element(depth.begin(), depth.end());
+        while (hh <= mx) {
+            max_log += 1;
+            hh <<= 1;
+        }
+        jump.resize(max_log, vector<int>(n, root));
+        for (int j = 1; j < max_log; ++j) {
+            for (int i = 0; i < n; ++i) {
+                jump[j][i] = jump[j - 1][jump[j - 1][i]];
+            }
+        }
+    }
+};
